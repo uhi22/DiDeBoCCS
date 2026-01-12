@@ -33,7 +33,7 @@ so we download am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz
 
 #### Variant B - with host PC
 
-- No SD card needed
+- No SD card needed during operation, only for updating the image on the eMMC.
 - connect beaglebone black (BBB) to the PC via mini-USB cable
 - after some seconds, the BBB appears as mass storage (lets say it is drive E:)
 - open the E:\README.htm
@@ -49,6 +49,7 @@ so we download am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz
 - on PC: open tightVNC viewer, connect to 192.168.7.2:1. Use the above defined VNC password.
 - on PC, you see the desktop of the BBB. Open an LX terminal on this desktop.
 - cloning a repository from github.com does not work in this setup, because the PC does not route the needed internet traffic to the USB network. Solution: Connect the BBB to internet router via network cable.
+- after restart with network cable connected to the internet router, the SSH (putty) and the web server over USB (192.168.7.2) does not work anymore. So we need to use the Ethernet way, e.g. 192.168.2.112 (look into your router and search for "beaglebone").
 - ifconfig should show that eth0 got ip-addresses
 - ping github.com should work now
 - mkdir myprogs
@@ -58,11 +59,89 @@ so we download am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz
     - git clone http://github.com/uhi22/OpenV2Gx
     - cd OpenV2Gx/Release
     - make
-    - We get an compile error regarding declaration in for loop. Todo: either setup a compatible compiler, or change the compiler options, or correct the code.
+    - We get an compile error regarding declaration in for loop. With the commit https://github.com/uhi22/OpenV2Gx/commit/ae21bce8acd8b4c183de9be95e5dfbad0022c68b this is fixed.
     - `make clean`, `make`
-
+- `cd /root/myprogs/pyPLC`
 - try to start pyPLC in EVSE mode: `sudo python3 pyPlc.py E`
 - Python complains about `No module named _tkinter`. Todo: how to install tkinter?
+- Should we update to a more recent debian version?  `cat /etc/debian_version` says `7.9`
+    - incl desktop, for flashing the eMMC: "AM335x 11.7 2023-09-02 4GB eMMC Xfce Flasher" https://files.beagle.cc/file/beagleboard-public-2021/images/am335x-eMMC-flasher-debian-11.7-xfce-armhf-2023-09-02-4gb.img.xz
+    - open beagleBoardImager, select beagle bone black and the image mentioned above, and a microSD drive. Burn the image to the microSD card.
+    - power-down the BBB. Insert the microSD card into the BBB. Hold the S2 button and power-on. If 4 LEDs are on, release the S2 button.
+    - after some blinking the LEDs will show "knight rider" pattern for several minutes. This indicates that the update is running. Finially all LEDs are off (or maybe steady on).
+    - Power off, remove SD card, power on.
+    - connect to network cable and power. Not USB.
+    - putty connect to 192.168.2.112 (check in the router for "beaglebone" to find out the IP address)
+    - username:password is debian:temppwd
+    - `cat /etc/debian_version` now reports `11.7`
+    - change password to debian `passwd`
+- again try to install pyPLC
+- but the eMMC disk is already nearly full:
+```
+df
+Filesystem     1K-blocks    Used Available Use% Mounted on
+udev              215500       0    215500   0% /dev
+tmpfs              49404    1344     48060   3% /run
+/dev/mmcblk1p1   3592716 3338636     51124  99% /
+```
+- so which version to install? Trying https://www.beagleboard.org/distros/am335x-11-7-2023-09-02-4gb-emmc-iot-flasher
+Result after installing this on the eMMC and connecting with putty:
+```
+debian@BeagleBone:~$ df
+Filesystem     1K-blocks    Used Available Use% Mounted on
+udev              218148       0    218148   0% /dev
+tmpfs              49404    1316     48088   3% /run
+/dev/mmcblk1p1   3592716 2027576   1362184  60% /
+tmpfs             247004       0    247004   0% /dev/shm
+tmpfs               5120       0      5120   0% /run/lock
+tmpfs              49400       0     49400   0% /run/user/1000
+debian@BeagleBone:~$ pwd
+/home/debian
+debian@BeagleBone:~$ cat /etc/debian_version
+11.7
+debian@BeagleBone:~$ python --version
+Python 3.9.2
+```
+
+- again try to install pyPLC
+
+```
+mkdir myprogs
+cd myprogs
+git clone https://github.com/uhi22/pyPLC
+git clone http://github.com/uhi22/OpenV2Gx
+cd OpenV2Gx/Release
+make
+cd /home/debian/myprogs/pyPLC/
+```
+
+- try to run plPLC in EVSE mode without graphical user interface `python evseNoGui.py`
+- result: pcap is not found. Install it: `python -m pip install --upgrade pcap-ct` and `sudo python -m pip install --upgrade pcap-ct`
+
+prepare the ini file with the settings for pyPLC:
+
+```
+cd /home/debian/myprogs/pyPLC/docs
+cp pyPlc.ini.template ./../pyPlc.ini
+cd ..
+nano pyPlc.ini
+```
+
+- install the "requests" python module
+```
+pip install requests
+sudo pip install requests
+```
+
+- `sudo python evseNoGui.py` works now. (still on eth0. No QCA driver yet.)
+
+Find out the kernel version:
+
+```
+debian@BeagleBone:~/myprogs/pyPLC$ uname -r
+5.10.168-ti-r71
+```
+
 
 ## Version 0
 
