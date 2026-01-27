@@ -208,19 +208,19 @@ eth_interface = eth0 (later change this to the name of the QCA interface)
 display_via_serial = no
 digital_output_device = beaglebone
 ```
-- try to run plPLC in EVSE mode without graphical user interface `sudo python evseNoGui.py`
 
-This leads to error message `No module named 'serial'` We need to install the pySerial (normal and as sudo).
+Install some python libraries which are needed by pyPLC:
 
-Same for Adafruit_BBIO, but this leads to errors. So setting digital_output_device to none in the pyPlc.ini for the moment.
-
-- install the "requests" python module
 ```
+pip install pySerial
+sudo pip install pySerial
 pip install requests
 sudo pip install requests
 ```
 
-- SUCCESS: `sudo python evseNoGui.py` works now. (still on eth0. No QCA driver yet.)
+Same for Adafruit_BBIO, but this leads to errors. So setting digital_output_device to none in the pyPlc.ini for the moment.
+
+- SUCCESS: `sudo python3 evseNoGui.py` works now. (still on eth0. No QCA driver yet.)
 
 #### Next step: integrate the QCA7000 SPI driver
 
@@ -675,6 +675,134 @@ debian@BeagleBone:~/myprogs$ plctool -i eth1 -I
         CCo Always
         MDU N/A
 ```
+
+#### First demo charging
+
+- in pyPlc.ini, change to eth1
+- connect the CP and PE to a demo car (Foccci)
+- `sudo python3 evseNoGui.py`
+- Result: Charging loop reached.
+
+#### Configuring I/O for the BeagleBone
+
+sudo pip3 install Adafruit_BBIO
+runs into error messages (linker error, multiple definitions of pud_off and some more). This issue is discussed here https://github.com/adafruit/adafruit-beaglebone-io-python/pull/345. The newer C compiler versions are more strict than the older. One solution is, to force the C compiler to the old behavior. `sudo CFLAGS="-fcommon" pip3 install Adafruit_BBIO`
+
+Now we can control pins from python
+```
+import Adafruit_BBIO.GPIO as GPIO
+import time
+
+mypinRelay1 = "P9_14"
+mypinRelay2 = "P9_16"
+
+GPIO.setup(mypinRelay1, GPIO.OUT)
+GPIO.setup(mypinRelay2, GPIO.OUT)
+
+for i in range(0, 10):
+        GPIO.output(mypinRelay1, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(mypinRelay2, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(mypinRelay1, GPIO.LOW)
+        GPIO.output(mypinRelay2, GPIO.LOW)
+        time.sleep(0.5)
+
+GPIO.cleanup()
+```
+
+But the output of the CP_PWM (P9_42) does not work in this way.
+sudo apt install bb-cape-overlays
+sudo config-pin P9_42 pwm
+config-pin -q P9_42
+also does not help.
+
+So we ignore the python library for PWM, and go the low-level way via sysfs.
+
+And make the python script running in backround as a service:
+sudo nano /etc/systemd/system/pwm-control.service
+[Unit]
+Description=PWM Control Script
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/debian/myprogs
+ExecStart=/usr/bin/python3 /home/debian/myprogs/pwm_control.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+Reload systemd to recognize the new service
+sudo systemctl daemon-reload
+
+Enable the service to start at boot
+sudo systemctl enable pwm-control.service
+
+Start the service now (to test)
+sudo systemctl start pwm-control.service
+
+Check the status
+sudo systemctl status pwm-control.service
+
+Stop the service
+sudo systemctl stop pwm-control.service
+
+Restart the service
+sudo systemctl restart pwm-control.service
+
+View logs
+sudo journalctl -u pwm-control.service -f
+
+Disable autostart
+sudo systemctl disable pwm-control.service
+
+But the PWM generator only works sometimes. To be investigated.
+
+
+##### Run pyPLC as a service
+
+sudo nano /etc/systemd/system/pyplc.service
+
+[Unit]
+Description=pyPLC EVSE Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/debian/myprogs/pyPLC
+ExecStart=/usr/bin/python3 /home/debian/myprogs/pyPLC/evseNoGui.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl enable pyplc.service
+
+Start the service now (to test)
+sudo systemctl start pyplc.service
+
+Check the status
+sudo systemctl status pyplc.service
+
+Stop the service
+sudo systemctl stop pyplc.service
+
+Restart the service
+sudo systemctl restart pyplc.service
+
+View logs
+sudo journalctl -u pyplc.service -f
+
+Disable autostart
+sudo systemctl disable pyplc.service
+
 
 
 
