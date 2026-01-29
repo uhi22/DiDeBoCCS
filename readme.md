@@ -711,27 +711,27 @@ for i in range(0, 10):
 GPIO.cleanup()
 ```
 
-But the output of the CP_PWM (P9_42) does not work in this way.
+But the output of the CP_PWM (P9_42) does not work using the Adafruit_BBIO (reason unclear).
 sudo apt install bb-cape-overlays
 sudo config-pin P9_42 pwm
 config-pin -q P9_42
 also does not help.
 
-So we ignore the python library for PWM, and go the low-level way via sysfs.
+So we ignore the Adafruit_BBIO python library for PWM, and go the low-level way via sysfs.
 
 And make the python script running in backround as a service:
-sudo nano /etc/systemd/system/pwm-control.service
+sudo nano /etc/systemd/system/cppwm.service
 [Unit]
-Description=PWM Control Script
+Description=CP PWM Control Script
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/home/debian/myprogs
-ExecStart=/usr/bin/python3 /home/debian/myprogs/pwm_control.py
-Restart=on-failure
-RestartSec=5
+WorkingDirectory=/home/debian/myprogs/DiDeBoCCS/source
+ExecStart=/usr/bin/python3 /home/debian/myprogs/DiDeBoCCS/source/cppwm.py
+Restart=always
+RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
@@ -740,27 +740,25 @@ Reload systemd to recognize the new service
 sudo systemctl daemon-reload
 
 Enable the service to start at boot
-sudo systemctl enable pwm-control.service
+sudo systemctl enable cppwm.service
 
 Start the service now (to test)
-sudo systemctl start pwm-control.service
+sudo systemctl start cppwm.service
 
 Check the status
-sudo systemctl status pwm-control.service
+sudo systemctl status cppwm.service
 
 Stop the service
-sudo systemctl stop pwm-control.service
+sudo systemctl stop cppwm.service
 
 Restart the service
-sudo systemctl restart pwm-control.service
+sudo systemctl restart cppwm.service
 
 View logs
-sudo journalctl -u pwm-control.service -f
+sudo journalctl -u cppwm.service -f
 
 Disable autostart
-sudo systemctl disable pwm-control.service
-
-But the PWM generator only works sometimes. To be investigated.
+sudo systemctl disable cppwm.service
 
 
 ##### Run pyPLC as a service
@@ -782,6 +780,8 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 
+Reload systemd to recognize the new service
+sudo systemctl daemon-reload
 
 sudo systemctl enable pyplc.service
 
@@ -803,7 +803,81 @@ sudo journalctl -u pyplc.service -f
 Disable autostart
 sudo systemctl disable pyplc.service
 
+#### CAN Bus
 
+For CAN0 (P9_19=RX, P9_20=TX)
+
+- sudo apt install can-utils
+- pip install python-can
+
+- Check the pin functions:
+- config-pin -q p9.19
+- config-pin -q p9.20
+- if this reports "default", it is wrong. We need "can".
+- to temporary change this, use:
+- config-pin p9.19 can
+- config-pin p9.20 can
+- to make this permanent: sudo nano /boot/uEnv.txt
+- add the following lines
+- uboot_overlay_addr4=/lib/firmware/BB-CAN0-00A0.dtbo
+- uboot_overlay_addr5=/lib/firmware/BB-CAN1-00A0.dtbo
+- keep the QCA-SPI overlay on a different number: uboot_overlay_addr6=/lib/firmware/BB-SPI0-QCASPI-00A0.dtbo
+- after this, and reboot, the config-pin -q p9.19 is reporting an error `ERROR: open() for /sys/devices/platform/ocp/ocp:P9_19_pinmux/state failed, No such file or directory` but the can works.
+- for manually setting baud rate:
+- sudo ip link set can0 type can bitrate 500000
+- sudo ip link set can0 up
+- ifconfig can0
+- For permanent setting the baudrate: Update the network interface for CAN, to start it automatically during startup. `sudo nano /etc/network/interfaces`
+- Add the following at the end:
+```
+allow-hotplug can0
+iface can0 can static
+    bitrate 500000
+```
+To test whether its working or not, lets dump all CAN messages to the console:
+`candump can0` Abort it with strg + c.
+
+#### CAN as a service
+
+sudo nano /etc/systemd/system/evsecan.service
+
+[Unit]
+Description=EVSE CAN bus Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/debian/myprogs
+ExecStart=/usr/bin/python3 /home/debian/myprogs/evsecan.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+
+Reload systemd to recognize the new service
+sudo systemctl daemon-reload
+
+sudo systemctl enable evsecan.service
+
+Start the service now (to test)
+sudo systemctl start evsecan.service
+
+Check the status
+sudo systemctl status evsecan.service
+
+Stop the service
+sudo systemctl stop evsecan.service
+
+Restart the service
+sudo systemctl restart evsecan.service
+
+View logs
+sudo journalctl -u evsecan.service -f
+
+Disable autostart
+sudo systemctl disable evsecan.service
 
 
 ## Version 0
