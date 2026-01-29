@@ -774,7 +774,7 @@ Type=simple
 User=root
 WorkingDirectory=/home/debian/myprogs/pyPLC
 ExecStart=/usr/bin/python3 /home/debian/myprogs/pyPLC/evseNoGui.py
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
