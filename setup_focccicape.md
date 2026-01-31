@@ -874,3 +874,53 @@ sudo journalctl -u evsecan.service -f
 
 Disable autostart
 sudo systemctl disable evsecan.service
+
+### tcpdump as a service
+
+We want that tcpdump logs all ethernet traffic from eth1 to a file, and to use a new file after each boot.
+cd /home/debian/myprogs/DiDeBoCCS
+mkdir logs
+chmod 777 logs
+
+The starttcpdump.sh increments a counter (which is stored in logs/logindex, and starts the tcpdump.
+
+sudo nano /etc/systemd/system/starttcpdump.service
+
+[Unit]
+Description=tcpdump starter Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/debian/myprogs/DiDeBoCCS
+ExecStart=/home/debian/myprogs/DiDeBoCCS/starttcpdump.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+
+and
+Reload systemd to recognize the new service
+sudo systemctl daemon-reload
+
+sudo systemctl enable starttcpdump.service
+
+Start the service now (to test)
+sudo systemctl start starttcpdump.service
+
+Check the status
+sudo systemctl status starttcpdump.service
+
+Stop the service
+sudo systemctl stop starttcpdump.service
+
+Restart the service
+sudo systemctl restart starttcpdump.service
+
+View logs
+sudo journalctl -u starttcpdump.service -f
+
+Disable autostart
+sudo systemctl disable starttcpdump.service
