@@ -1,65 +1,25 @@
 # Setup of FoccciCape
 
-Work in progress, based on the FoccciCape
+Work in progress
 
-- Started here: https://openinverter.org/forum/viewtopic.php?p=87270#p87270
-- instructions to setup the BeagleBone https://openinverter.org/forum/viewtopic.php?p=87295#p87295
+This document describes how to setup the FoccciCape.
 
-### initial setup
+Preconditions: You have a BeagleBone Black (or green?) computer, a FoccciCape, a 5V power supply, network cable connected to your local network, and a PC (decription is focusing a windows PC, but Linux may be even better).
 
-#### Connection Variant A - standalone with boot from SD (not recommended)
+Goal: FoccciCape runs a CCS charging session with your car. 
 
-Preconditions:
-- BeagleBone Black. This has an AM335x.
-- SD card (e.g. 32GB SanDisk) connected to Windows10 via USB card reader
+## Connecting the BeagleBone
 
-Installation Steps:
-- We want a graphical desktop, so we do NOT choose the IoT variant of the image.
-- E.g. image "Debian 11.x (Bullseye) Xfce Desktop Snapshot" from https://forum.beagleboard.org/t/debian-11-x-bullseye-monthly-snapshot-2023-10-07/31280
-so we download am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz
-- download the imager tool, which can burn the image to the microSD card. https://www.beagleboard.org/bb-imager
-- install the imager tool and start it
-- in the imager tool, select the board (BeagleBone Black) and the image (custom image -> am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz), and the SD card as destination.
-- Start flashing the image and wait until flashing is completed.
-- Remove the SD card from the SD card reader and put it into the beaglebone black.
-- Connect mouse and keyboard to the beaglebone black via an USB hub.
-- Connect monitor to the beaglebone black with microHDMI cable.
-- Hold S2 and connect 5V to the power connector of the beaglebone black. (When not holding the S2 while powering-on, the beaglebone will boot from internal eMMC instead of SD card. This is not what we want.
-- LEDs are blinking and mouse cursor appears on (black) screen. After ~3 minutes the desktop appears.
+The are several variants how to wire the beaglebone, e.g. use it as a desktop computer, or using PC via USB or via local network. The not working variants are described in Annex A. The recommended best way to go is: Connection Variant D - SSH.
 
-Conclusion: Not practicable, because holding the boot button each time is not possible. Slow booting.
-
-#### Connection Varient B - standalone with boot from eMMC (not recommended)
-
-Conclusion: Not helpful, because the 4GB eMMC is already full after installing the full-blown desktop image.
-
-#### Connection Variant C - with host PC via USB (not recommended)
-
-- No SD card needed during operation, only for updating the image on the eMMC.
-- connect beaglebone black (BBB) to the PC via mini-USB cable
-- after some seconds, the BBB appears as mass storage (lets say it is drive E:)
-- open the E:\README.htm
-- install the drivers (for Win10: use E:\Drivers\Windows\BONE_D64.exe. If this fails, a likely root cause is that the signature of the driver is not accepted by windows 10. To work-around this, you need to disable driver signature enforcement before installing drivers if you are using Windows 10. Go to Setting > Updates & Security > Recovery > Advanced startup > click on Restart. After restarting, Windows switch to Advanced startup mode. Go to Troubleshoot > Advanced options > Startup settings > click on Restart. After restarting, press F7 to select Disable driver signature enforcement. Now you can install drivers for your board. This was explained in this tutorial https://youtu.be/mxMMf-8d6x4
-- if the drivers are successfully installed, the BBB shall be reachable via http, e.g. http://192.168.7.2/bone101/Support/BoneScript/demo_blinkled/ where we can press the RUN button to blink the USR3 LED.
-- putty and tightvnc: see https://www.youtube.com/watch?v=c81tmb7WJxw (this uses a network cable)
-- SSH using putty also works via USB. Connect to 192.168.7.2. Login: root, no password.
-- Install tightVNC on the desktop PC
-- Install tightvnc server on the BBB using putty:
-    - sudo apt-get install tightvncserver
-    - tightvncserver PW (e.g. 12121212)
-    - vncserver :1 -geometry 1280x800 -depth 24 -dpi 96
-- on PC: open tightVNC viewer, connect to 192.168.7.2:1. Use the above defined VNC password.
-- on PC, you see the desktop of the BBB. Open an LX terminal on this desktop.
-- cloning a repository from github.com does not work in this setup, because the PC does not route the needed internet traffic to the USB network. Solution: Connect the BBB to internet router via network cable. Now the USB connection does not make much sense. Go to Variant D.
-
-#### Connection Variant D - SSH (recommended)
-
-We use the ethernet socket of the BBB for connecting to the local network. We connect via SSH from the PC (using Putty). File transfer is easy with scp.
+We use the ethernet socket of the BBB for connecting to the local network. We connect via SSH from the PC (using Putty). File transfer is easy with scp or using the SSH plugin of Notepad++.
 Putty finds the BBB by using the name "beaglebone.local". If not, look in your router which IP address the beaglebone got. As a backup solution, you can connect a HDMI display and a keyboard directly to the BBB, and use ifconfig to find out the network settings and status.
 
-- ping github.com works now
+Verify:
+- PC can reach the beaglebone via SSH (e.g. using Putty on windows)
+- `ping github.com` works
 
-#### Image variants
+## Image variants
 
 The beagle bone website offer a lot of different images. They differ in multiple dimensions:
 - content (minimal, IoT, desktop)
@@ -73,21 +33,17 @@ Decision criterias:
 
 For flashing an image to the eMMC there seem to be different ways (otherwise it would be too easy): Images which have "flasher" in the name, but newer images are not coming as "flasher", instead the "normal" images can be somehow transferred to the eMMC by commands like described in https://forum.beagleboard.org/t/emmc-not-found-beagle-bone-black-flasher-fails/37066/7, but this did not work.
 
-So the working path is: use a minimal "flasher" image.
+So the recommended way is: use a minimal "flasher" image.
 
 Let's use https://forum.beagleboard.org/t/debian-11-x-bullseye-monthly-snapshot-2023-10-07/31280
 am335x-eMMC-flasher-debian-11.8-minimal-armhf-2023-10-07-2gb.img.xz
 
-##### Boot-Issue: BeagleBone does not boot anymore.
-
-4 LEDs are permenent on. No matter whether trying to boot from eMMC or SD. It is not clear what killed the BBB. Only solution: use a new one.
-
-##### Imager issues
+## Imager issues
 
 The combination of "bad" SD cards and BeagleBoneImager is not a good idea. The BeagleBoneImager pretents that it has flashed the image, but in fact the data on the SD card was corrupted. Recommendation: Use Etcher. This gives error messages if the write fails, and makes a verification. And do not buy the cheapest SD cards you can find.
 Even considering these hints, the process is quite instable. During verification step, we got kicked-out (windows driver issues???) but at least the image was written. Multiple trials before ended in abort during writing the image.
 
-##### Conclusion for flashing the image
+## Conclusion for flashing the image
 
 - use am335x-eMMC-flasher-debian-11.8-minimal-armhf-2023-10-07-2gb.img.xz
 - use a reliable SD card.
@@ -107,11 +63,10 @@ Linux BeagleBone 5.10.168-ti-r72 #1bullseye SMP PREEMPT Sat Sep 30 03:37:21 UTC
 2023 armv7l GNU/Linux
 ```
 
-##### Install pyPLC
-
-- install pyPLC
+## Install pyPLC
 
 ```
+cd /home/debian
 mkdir myprogs
 cd myprogs
 git clone https://github.com/uhi22/pyPLC
@@ -120,7 +75,7 @@ cd OpenV2Gx/Release
 make
 ```
 
-- This leads to the error "make: command not found". Root cause: We have a minimal image, which does not contain the build tools. Solution: install build-essential
+- This leads to the error `make: command not found`. Root cause: We have a minimal image, which does not contain the build tools. Solution: install build-essential
 
 ```
 sudo apt-get update
@@ -202,7 +157,7 @@ The important settings for the beginning are:
 mode = EvseMode
 eth_interface = eth0 (later change this to the name of the QCA interface)
 display_via_serial = no
-digital_output_device = beaglebone
+digital_output_device = none
 ```
 
 Install some python libraries which are needed by pyPLC:
@@ -218,17 +173,16 @@ Same for Adafruit_BBIO, but this leads to errors. So setting digital_output_devi
 
 - SUCCESS: `sudo python3 evseNoGui.py` works now. (still on eth0. No QCA driver yet.)
 
-#### Next step: integrate the QCA7000 SPI driver
+## integrate the QCA7000 SPI driver
 
-some description here: https://openinverter.org/forum/viewtopic.php?p=72982#p72982
+Some description is here: https://openinverter.org/forum/viewtopic.php?p=72982#p72982
+Below there is a step-by-step guide. The compiling of the .ko files can be skipped, if using the .ko files which are provided in this repository https://github.com/uhi22/DiDeBoCCS/tree/main/kernel-modules/5.10.168-ti-r72 However, this works only if using the exact kernel version as recommended in this tutorial.
 
-
-##### Step-by-step
+### Step-by-step
 
 Step 1: create a device tree source file (.dts)
 
 You'll need to add a device tree overlay to configure the SPI interface and QCA7000 device. Create a device tree source file (.dts) with the content shown in https://openinverter.org/forum/viewtopic.php?p=87295#p87295
-
 
 ```
 /*
@@ -333,15 +287,22 @@ You'll need to add a device tree overlay to configure the SPI interface and QCA7
 };
 ```
 
+```
 cd /opt/source/bb.org-overlays/src/arm/
 nano BB-SPI0-QCASPI-00A0.dts
+```
+
 and paste the file content from the forum.
 
 Step 2: Compile and install the overlay
 
+```
 cd /opt/source/bb.org-overlays/
 make
+```
+
 This should lead to the following files:
+
 ```
 cd /opt/source/bb.org-overlays/src/arm
 debian@BeagleBone:/opt/source/bb.org-overlays/src/arm$ ls -al | grep QCA
@@ -353,9 +314,12 @@ debian@BeagleBone:/opt/source/bb.org-overlays/src/arm$ ls -al | grep QCA
 -rw-r--r-- 1 debian debian  2689 Jan 25 20:45 BB-SPI0-QCASPI-00A0.dts
 ```
 
+```
 sudo cp /opt/source/bb.org-overlays/src/arm/BB-SPI0-QCASPI-00A0.dtbo /lib/firmware/
+```
 
 Now we have the compiled overlay here:
+
 ```
 cd /lib/firmware
 debian@BeagleBone:/lib/firmware$ ls -al | grep QCA
@@ -363,7 +327,11 @@ debian@BeagleBone:/lib/firmware$ ls -al | grep QCA
 ```
 
 Load the overlay at boot by editing /boot/uEnv.txt
+
+```
 sudo nano /boot/uEnv.txt
+```
+
 Add: dtb_overlay=/lib/firmware/BB-SPI0-QCASPI-00A0.dtbo
 
 Step 3 Kernel Configuration
@@ -378,66 +346,11 @@ This means, the kernel does not yet contain the QCA driver.
 
 Step 4 Build the Kernel with QCA support --- Attention, this is a mess --- todo cleanup the description
 
-debian@BeagleBone:/lib/firmware$ uname -r
-5.10.168-ti-r72
+(The native build of the complete kernel directly on the BBB fails, see Annex A).
 
-sudo apt-get update
-sudo apt-get install -y git build-essential libncurses5-dev libssl-dev bc bison flex lzop u-boot-tools device-tree-compiler lsb-release lz4 man-db gettext pkg-config libmpc-dev zstd libdw-dev
-
-mkdir ~/kernel
-cd ~/kernel
-git clone https://github.com/RobertCNelson/bb-kernel.git
-cd bb-kernel
-git checkout origin/am33x-v5.10 -b am33x-v5.10
-
-(df shows that this disk is 91% full already, `/dev/mmcblk1p1   1804184 1533468    160740  91% /`)
-
-./build_kernel.sh
-
-runs into error:
-remote: Finding sources: 100% (2744/2744)
-fatal: Out of memory, calloc failed
-
-```
-top
-top - 21:57:09 up  3:01,  2 users,  load average: 0.01, 0.49, 0.57
-Tasks:  89 total,   1 running,  88 sleeping,   0 stopped,   0 zombie
-%Cpu(s):  0.0 us,  1.0 sy,  0.0 ni, 99.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-MiB Mem :    482.4 total,     79.9 free,     50.1 used,    352.5 buff/cache
-MiB Swap:      0.0 total,      0.0 free,      0.0 used.    419.7 avail Mem
-
-debian@BeagleBone:~/kernel/bb-kernel$ df
-Filesystem     1K-blocks    Used Available Use% Mounted on
-udev              218748       0    218748   0% /dev
-tmpfs              49404    1344     48060   3% /run
-/dev/mmcblk1p1   1804184 1560424    133784  93% /
-tmpfs             247004       0    247004   0% /dev/shm
-tmpfs               5120       0      5120   0% /run/lock
-tmpfs              49400       0     49400   0% /run/user/1000
-```
-
-Same error on a newer BBB with 4GB eMMC, where the df shows this:
-`/dev/mmcblk1p1   3592716 1370808   2018952  41% /`
-
-The error message `fatal: Out of memory, calloc failed` indicates missing RAM space. A solution is to add swap space. (This is slow, because missing RAM is trying to be compensated by place on the eMMC memory.)
-
-- Create a swap file (this example creates a 1GB swap file): sudo fallocate -l 1G /swapfile
-- Set the correct permissions: sudo chmod 600 /swapfile
-- Set up the swap area: sudo mkswap /swapfile
-- Enable the swap file: sudo swapon /swapfile
-- Verify it's working: sudo swapon --show
-- free -h
-- Make it permanent: To automatically enable the swap file on boot, add this line to /etc/fstab: echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-- Adjust swappiness: The "swappiness" value controls how aggressively the system uses swap. Lower values mean it prefers RAM. For a kernel compilation workload, you might want: sudo sysctl vm.swappiness=10
-- To make this permanent, add vm.swappiness=10 to /etc/sysctl.conf.
-
-Try to build the kernel again: `./build_kernel.sh`
-Result: better, but during cloning into '/home/debian/kernel/bb-kernel/ignore/linux-src' the 4GB eMMC fills from 72% to 100%, so the build fails: `fatal: write error: No space left on device 946.58 MiB | 1.23 MiB/s`
-
-Conclusion: Building the linux kernel on a 4GB eMMC does not work in this way.
 Next option: try cross-compiling on an other machine.
 
-#### Cross compiling on windows 10 machine using WSL2
+### Cross compiling on windows 10 machine using WSL2
 
 - powershell as admin. `wsl --install` This installs Ubuntu as "Windows Subsystem For Linux".
 - restart the PC.
@@ -515,18 +428,18 @@ Result:
 
 Three possible options to proceed:
 
-- (A) native-build only the two .ko files on the BBB.
+- (A) native-build only the two .ko files on the BBB. Unclear how this can be done.
 - (B) find out, how to get the exact version on PC
 - (C) transfer the complete kernel from the PC to the BBB, to have full consistency. (not chosen if other options work)
 
-#### For Option (A): Natively compile only the two .ko files
+### For Option (A): Natively compile only the two .ko files
 
 uname -r
 5.10.168-ti-r72
 sudo apt install linux-headers-5.10.168-ti-r72
 But how to compile the sources into a .ko, and how to satisfy the "sudo depmod -a"?
 
-#### For Option (B): Configure the exact version on the PC
+### For Option (B): Configure the exact version on the PC
 
 Multiple points to check:
 - the tag in the checkout command needs to be correct. This was already fulfilled.
@@ -628,7 +541,7 @@ drwxr-xr-x 3 root root  0 Jan 27 08:48 ..
 -r--r--r-- 1 root root  9 Jan 27 08:48 name
 ```
 
-#### Commands for Verification and trouble shooting
+### Commands for Verification and trouble shooting the QCA SPI driver
 
 ```
 modinfo qcaspi
@@ -646,8 +559,7 @@ cd /proc/device-tree/chosen/overlays
 ls -al
 ```
 
-
-#### First steps with the QCA
+### First steps with the QCA
 
 ```
 sudo apt update
@@ -672,14 +584,14 @@ debian@BeagleBone:~/myprogs$ plctool -i eth1 -I
         MDU N/A
 ```
 
-#### First demo charging
+## First demo charging
 
 - in pyPlc.ini, change to eth1
 - connect the CP and PE to a demo car (Foccci)
 - `sudo python3 evseNoGui.py`
 - Result: Charging loop reached.
 
-#### Configuring I/O for the BeagleBone
+## Configuring I/O for the BeagleBone
 
 sudo pip3 install Adafruit_BBIO
 runs into error messages (linker error, multiple definitions of pud_off and some more). This issue is discussed here https://github.com/adafruit/adafruit-beaglebone-io-python/pull/345. The newer C compiler versions are more strict than the older. One solution is, to force the C compiler to the old behavior. `sudo CFLAGS="-fcommon" pip3 install Adafruit_BBIO`
@@ -708,15 +620,18 @@ GPIO.cleanup()
 ```
 
 But the output of the CP_PWM (P9_42) does not work using the Adafruit_BBIO (reason unclear).
-sudo apt install bb-cape-overlays
-sudo config-pin P9_42 pwm
-config-pin -q P9_42
+`sudo apt install bb-cape-overlays`
+`sudo config-pin P9_42 pwm`
+`config-pin -q P9_42`
 also does not help.
 
 So we ignore the Adafruit_BBIO python library for PWM, and go the low-level way via sysfs.
 
-And make the python script running in backround as a service:
-sudo nano /etc/systemd/system/cppwm.service
+We want to run the PWM control independent of pyPLC as a service in background.
+
+`sudo nano /etc/systemd/system/cppwm.service`
+
+```
 [Unit]
 Description=CP PWM Control Script
 After=network.target
@@ -731,36 +646,38 @@ RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
+```
 
 Reload systemd to recognize the new service
-sudo systemctl daemon-reload
+`sudo systemctl daemon-reload`
 
 Enable the service to start at boot
-sudo systemctl enable cppwm.service
+`sudo systemctl enable cppwm.service`
 
 Start the service now (to test)
-sudo systemctl start cppwm.service
+`sudo systemctl start cppwm.service`
 
 Check the status
-sudo systemctl status cppwm.service
+`sudo systemctl status cppwm.service`
 
 Stop the service
-sudo systemctl stop cppwm.service
+`sudo systemctl stop cppwm.service`
 
 Restart the service
-sudo systemctl restart cppwm.service
+`sudo systemctl restart cppwm.service`
 
 View logs
-sudo journalctl -u cppwm.service -f
+`sudo journalctl -u cppwm.service -f`
 
 Disable autostart
-sudo systemctl disable cppwm.service
+`sudo systemctl disable cppwm.service`
 
 
-##### Run pyPLC as a service
+## Run pyPLC as a service
 
-sudo nano /etc/systemd/system/pyplc.service
+`sudo nano /etc/systemd/system/pyplc.service`
 
+```
 [Unit]
 Description=pyPLC EVSE Service
 After=network.target
@@ -775,31 +692,31 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
+```
 
 Reload systemd to recognize the new service
-sudo systemctl daemon-reload
-
-sudo systemctl enable pyplc.service
+`sudo systemctl daemon-reload`
+`sudo systemctl enable pyplc.service`
 
 Start the service now (to test)
-sudo systemctl start pyplc.service
+`sudo systemctl start pyplc.service`
 
 Check the status
-sudo systemctl status pyplc.service
+`sudo systemctl status pyplc.service`
 
 Stop the service
-sudo systemctl stop pyplc.service
+`sudo systemctl stop pyplc.service`
 
 Restart the service
-sudo systemctl restart pyplc.service
+`sudo systemctl restart pyplc.service`
 
 View logs
-sudo journalctl -u pyplc.service -f
+`sudo journalctl -u pyplc.service -f`
 
 Disable autostart
-sudo systemctl disable pyplc.service
+`sudo systemctl disable pyplc.service`
 
-#### CAN Bus
+## CAN Bus
 
 For CAN0 (P9_19=RX, P9_20=TX)
 
@@ -833,59 +750,29 @@ iface can0 can static
 To test whether its working or not, lets dump all CAN messages to the console:
 `candump can0` Abort it with strg + c.
 
-#### CAN as a service (just an experiment, not necessary)
+An example how to run CAN communication as a service is shown in Annex B (not needed, just for demonstration).
 
-sudo nano /etc/systemd/system/evsecan.service
 
-[Unit]
-Description=EVSE CAN bus Service
-After=network.target
+## pyPLC Settings
 
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/home/debian/myprogs
-ExecStart=/usr/bin/python3 /home/debian/myprogs/evsecan.py
-Restart=always
-RestartSec=2
+The following settings in the pyPlc.ini files are recommended for use on FoccciCape:
 
-[Install]
-WantedBy=multi-user.target
+todo...
 
-Reload systemd to recognize the new service
-sudo systemctl daemon-reload
-
-sudo systemctl enable evsecan.service
-
-Start the service now (to test)
-sudo systemctl start evsecan.service
-
-Check the status
-sudo systemctl status evsecan.service
-
-Stop the service
-sudo systemctl stop evsecan.service
-
-Restart the service
-sudo systemctl restart evsecan.service
-
-View logs
-sudo journalctl -u evsecan.service -f
-
-Disable autostart
-sudo systemctl disable evsecan.service
-
-### tcpdump as a service
+## tcpdump as a service
 
 We want that tcpdump logs all ethernet traffic from eth1 to a file, and to use a new file after each boot.
+```
 cd /home/debian/myprogs/DiDeBoCCS
 mkdir logs
 chmod 777 logs
+```
 
-The starttcpdump.sh increments a counter (which is stored in logs/logindex, and starts the tcpdump.
+The starttcpdump.sh increments a counter (which is stored in logs/logindex), and starts the tcpdump.
 
-sudo nano /etc/systemd/system/starttcpdump.service
+`sudo nano /etc/systemd/system/starttcpdump.service`
 
+```
 [Unit]
 Description=tcpdump starter Service
 After=network.target
@@ -900,27 +787,186 @@ RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
+```
 
-and
-Reload systemd to recognize the new service
-sudo systemctl daemon-reload
-
-sudo systemctl enable starttcpdump.service
+and reload systemd to recognize the new service
+`sudo systemctl daemon-reload`
+`sudo systemctl enable starttcpdump.service`
 
 Start the service now (to test)
-sudo systemctl start starttcpdump.service
+`sudo systemctl start starttcpdump.service`
 
 Check the status
-sudo systemctl status starttcpdump.service
+`sudo systemctl status starttcpdump.service`
 
 Stop the service
-sudo systemctl stop starttcpdump.service
+`sudo systemctl stop starttcpdump.service`
 
 Restart the service
-sudo systemctl restart starttcpdump.service
+`sudo systemctl restart starttcpdump.service`
 
 View logs
-sudo journalctl -u starttcpdump.service -f
+`sudo journalctl -u starttcpdump.service -f`
 
 Disable autostart
-sudo systemctl disable starttcpdump.service
+`sudo systemctl disable starttcpdump.service`
+
+
+
+## Annex A: How it does NOT work. Or: Discarded approaches
+
+### Connection Variant A - standalone with boot from SD (not recommended)
+
+Preconditions:
+- BeagleBone Black. This has an AM335x.
+- SD card (e.g. 32GB SanDisk) connected to Windows10 via USB card reader
+
+Installation Steps:
+- We want a graphical desktop, so we do NOT choose the IoT variant of the image.
+- E.g. image "Debian 11.x (Bullseye) Xfce Desktop Snapshot" from https://forum.beagleboard.org/t/debian-11-x-bullseye-monthly-snapshot-2023-10-07/31280
+so we download am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz
+- download the imager tool, which can burn the image to the microSD card. https://www.beagleboard.org/bb-imager
+- install the imager tool and start it
+- in the imager tool, select the board (BeagleBone Black) and the image (custom image -> am335x-debian-11.8-xfce-armhf-2023-10-07-4gb.img.xz), and the SD card as destination.
+- Start flashing the image and wait until flashing is completed.
+- Remove the SD card from the SD card reader and put it into the beaglebone black.
+- Connect mouse and keyboard to the beaglebone black via an USB hub.
+- Connect monitor to the beaglebone black with microHDMI cable.
+- Hold S2 and connect 5V to the power connector of the beaglebone black. (When not holding the S2 while powering-on, the beaglebone will boot from internal eMMC instead of SD card. This is not what we want.
+- LEDs are blinking and mouse cursor appears on (black) screen. After ~3 minutes the desktop appears.
+
+Conclusion: Not practicable, because holding the boot button each time is not possible. Slow booting.
+
+### Connection Variant B - standalone with boot from eMMC (not recommended)
+
+Conclusion: Not helpful, because the 4GB eMMC is already full after installing the full-blown desktop image.
+
+### Connection Variant C - with host PC via USB (not recommended)
+
+- No SD card needed during operation, only for updating the image on the eMMC.
+- connect beaglebone black (BBB) to the PC via mini-USB cable
+- after some seconds, the BBB appears as mass storage (lets say it is drive E:)
+- open the E:\README.htm
+- install the drivers (for Win10: use E:\Drivers\Windows\BONE_D64.exe. If this fails, a likely root cause is that the signature of the driver is not accepted by windows 10. To work-around this, you need to disable driver signature enforcement before installing drivers if you are using Windows 10. Go to Setting > Updates & Security > Recovery > Advanced startup > click on Restart. After restarting, Windows switch to Advanced startup mode. Go to Troubleshoot > Advanced options > Startup settings > click on Restart. After restarting, press F7 to select Disable driver signature enforcement. Now you can install drivers for your board. This was explained in this tutorial https://youtu.be/mxMMf-8d6x4
+- if the drivers are successfully installed, the BBB shall be reachable via http, e.g. http://192.168.7.2/bone101/Support/BoneScript/demo_blinkled/ where we can press the RUN button to blink the USR3 LED.
+- putty and tightvnc: see https://www.youtube.com/watch?v=c81tmb7WJxw (this uses a network cable)
+- SSH using putty also works via USB. Connect to 192.168.7.2. Login: root, no password.
+- Install tightVNC on the desktop PC
+- Install tightvnc server on the BBB using putty:
+    - sudo apt-get install tightvncserver
+    - tightvncserver PW (e.g. 12121212)
+    - vncserver :1 -geometry 1280x800 -depth 24 -dpi 96
+- on PC: open tightVNC viewer, connect to 192.168.7.2:1. Use the above defined VNC password.
+- on PC, you see the desktop of the BBB. Open an LX terminal on this desktop.
+- cloning a repository from github.com does not work in this setup, because the PC does not route the needed internet traffic to the USB network. Solution: Connect the BBB to internet router via network cable. Now the USB connection does not make much sense. Go to Variant D.
+
+### Building the Linux Kernel natively on the BeagleBone (not recommended)
+
+debian@BeagleBone:/lib/firmware$ uname -r
+5.10.168-ti-r72
+
+sudo apt-get update
+sudo apt-get install -y git build-essential libncurses5-dev libssl-dev bc bison flex lzop u-boot-tools device-tree-compiler lsb-release lz4 man-db gettext pkg-config libmpc-dev zstd libdw-dev
+
+mkdir ~/kernel
+cd ~/kernel
+git clone https://github.com/RobertCNelson/bb-kernel.git
+cd bb-kernel
+git checkout origin/am33x-v5.10 -b am33x-v5.10
+
+(df shows that this disk is 91% full already, `/dev/mmcblk1p1   1804184 1533468    160740  91% /`)
+
+./build_kernel.sh
+
+runs into error:
+remote: Finding sources: 100% (2744/2744)
+fatal: Out of memory, calloc failed
+
+```
+top
+top - 21:57:09 up  3:01,  2 users,  load average: 0.01, 0.49, 0.57
+Tasks:  89 total,   1 running,  88 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.0 us,  1.0 sy,  0.0 ni, 99.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :    482.4 total,     79.9 free,     50.1 used,    352.5 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.    419.7 avail Mem
+
+debian@BeagleBone:~/kernel/bb-kernel$ df
+Filesystem     1K-blocks    Used Available Use% Mounted on
+udev              218748       0    218748   0% /dev
+tmpfs              49404    1344     48060   3% /run
+/dev/mmcblk1p1   1804184 1560424    133784  93% /
+tmpfs             247004       0    247004   0% /dev/shm
+tmpfs               5120       0      5120   0% /run/lock
+tmpfs              49400       0     49400   0% /run/user/1000
+```
+
+Same error on a newer BBB with 4GB eMMC, where the df shows this:
+`/dev/mmcblk1p1   3592716 1370808   2018952  41% /`
+
+The error message `fatal: Out of memory, calloc failed` indicates missing RAM space. A solution is to add swap space. (This is slow, because missing RAM is trying to be compensated by place on the eMMC memory.)
+
+- Create a swap file (this example creates a 1GB swap file): sudo fallocate -l 1G /swapfile
+- Set the correct permissions: sudo chmod 600 /swapfile
+- Set up the swap area: sudo mkswap /swapfile
+- Enable the swap file: sudo swapon /swapfile
+- Verify it's working: sudo swapon --show
+- free -h
+- Make it permanent: To automatically enable the swap file on boot, add this line to /etc/fstab: echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+- Adjust swappiness: The "swappiness" value controls how aggressively the system uses swap. Lower values mean it prefers RAM. For a kernel compilation workload, you might want: sudo sysctl vm.swappiness=10
+- To make this permanent, add vm.swappiness=10 to /etc/sysctl.conf.
+
+Try to build the kernel again: `./build_kernel.sh`
+Result: better, but during cloning into '/home/debian/kernel/bb-kernel/ignore/linux-src' the 4GB eMMC fills from 72% to 100%, so the build fails: `fatal: write error: No space left on device 946.58 MiB | 1.23 MiB/s`
+
+Conclusion: Building the linux kernel on a 4GB eMMC does not work in this way.
+
+
+## Annex B: CAN as a service (just an experiment, not necessary)
+
+`sudo nano /etc/systemd/system/evsecan.service`
+
+```
+[Unit]
+Description=EVSE CAN bus Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/debian/myprogs
+ExecStart=/usr/bin/python3 /home/debian/myprogs/evsecan.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Reload systemd to recognize the new service
+`sudo systemctl daemon-reload`
+`sudo systemctl enable evsecan.service`
+
+Start the service now (to test)
+`sudo systemctl start evsecan.service`
+
+Check the status
+`sudo systemctl status evsecan.service`
+
+Stop the service
+`sudo systemctl stop evsecan.service`
+
+Restart the service
+`sudo systemctl restart evsecan.service`
+
+View logs
+`sudo journalctl -u evsecan.service -f`
+
+Disable autostart
+`sudo systemctl disable evsecan.service`
+
+
+## References
+
+- Ref1 Discussion on openinverter forum https://openinverter.org/forum/viewtopic.php?p=87270#p87270
+- Ref2 Instructions to setup the BeagleBone on openinverter forum https://openinverter.org/forum/viewtopic.php?p=87295#p87295
+
