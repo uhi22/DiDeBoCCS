@@ -9,6 +9,8 @@ Demonstrator for discharging a car via CCS connector
 - Demonstration video on Touran https://youtu.be/jTx41aqIouk
 - Demonstration video on Ioniq https://youtu.be/E4KNq4u5nmQ
 - Detailled setup-guide [setup_focccicape.md](setup_focccicape.md)
+- Discussion on openinverter forum https://openinverter.org/forum/viewtopic.php?p=87270#p87270
+- Wiki on openinverter https://openinverter.org/wiki/FoccciCape
 
 ## Version 0: With Homeplug modem and Laptop
 
