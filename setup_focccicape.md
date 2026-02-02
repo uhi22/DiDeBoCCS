@@ -771,6 +771,16 @@ An example how to run CAN communication as a service is shown in Annex B (not ne
 
 The following settings in the pyPlc.ini files are recommended for use on FoccciCape:
 
+`mode = EvseMode` Configures the pyPLC to be a charging station.
+
+`eth_interface = eth1` Configures the pyPLC to use the network interface with the QCA7005.
+
+`display_via_serial = no` Do not send status data via serial line.
+
+`digital_output_device = None` No general digital output control. (The FoccciCape-related outputs are configured via evsemode_environment, see below.)
+
+`udp_syslog_enable = No` Do not send debug messages as syslog UDP messages, because this spams the network and wasts run time.
+
 `evsemode_environment = focccicape` Enable the blinking on the FoccciCapes relay outputs (just for demonstration) and enables the transmission of CAN frames on the CAN0 for showing status information.
 
 `evse_power_supply_control_via_special_homeplug_message = False` Do not send special homeplug message for controlling a power supply.
