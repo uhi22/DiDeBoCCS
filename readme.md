@@ -12,6 +12,8 @@ Demonstrator for discharging a car via CCS connector
 
 ## Version 0: With Homeplug modem and Laptop
 
+![image](doc/2024-pyPLC-vehicle-to-bulb-augsburg-touran.jpg)
+
 The test setup consists of
 - notebook running pyPLC
 - PLC modem
