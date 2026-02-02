@@ -444,9 +444,9 @@ But how to compile the sources into a .ko, and how to satisfy the "sudo depmod -
 Multiple points to check:
 - the tag in the checkout command needs to be correct. This was already fulfilled.
 - the .config needs to be used from the BBB.
-    - # On BeagleBone, check if config is available
+    - On BeagleBone, check if config is available
     - zcat /proc/config.gz > running_config
-    - # Copy to your PC
+    - Copy to your PC
     - scp debian@beaglebone.local:~/running_config ~/linuxkernels/linux/.config
     - This overwrites the settings which have been made in the menuconfig, so we need to enable the QCA again.
 - Check the makefile: `~/linuxkernels/linux$ nano Makefile` and change the empty entry correcty: EXTRAVERSION = -ti-r72
@@ -720,28 +720,42 @@ Disable autostart
 
 For CAN0 (P9_19=RX, P9_20=TX)
 
-- sudo apt install can-utils
-- pip install python-can
+```
+sudo apt install can-utils
+pip install python-can
+```
 
-- Check the pin functions:
-- config-pin -q p9.19
-- config-pin -q p9.20
-- if this reports "default", it is wrong. We need "can".
-- to temporary change this, use:
-- config-pin p9.19 can
-- config-pin p9.20 can
-- to make this permanent: sudo nano /boot/uEnv.txt
-- add the following lines
-- uboot_overlay_addr4=/lib/firmware/BB-CAN0-00A0.dtbo
-- uboot_overlay_addr5=/lib/firmware/BB-CAN1-00A0.dtbo
-- keep the QCA-SPI overlay on a different number: uboot_overlay_addr6=/lib/firmware/BB-SPI0-QCASPI-00A0.dtbo
-- after this, and reboot, the config-pin -q p9.19 is reporting an error `ERROR: open() for /sys/devices/platform/ocp/ocp:P9_19_pinmux/state failed, No such file or directory` but the can works.
-- for manually setting baud rate:
-- sudo ip link set can0 type can bitrate 500000
-- sudo ip link set can0 up
-- ifconfig can0
-- For permanent setting the baudrate: Update the network interface for CAN, to start it automatically during startup. `sudo nano /etc/network/interfaces`
-- Add the following at the end:
+Check the pin functions:
+
+```
+config-pin -q p9.19
+config-pin -q p9.20
+```
+
+If this reports "default", it is wrong. We need "can". To temporary change this, use:
+`config-pin p9.19 can` `config-pin p9.20 can`.
+To make this permanent: `sudo nano /boot/uEnv.txt` and add the following lines
+```
+uboot_overlay_addr4=/lib/firmware/BB-CAN0-00A0.dtbo
+uboot_overlay_addr5=/lib/firmware/BB-CAN1-00A0.dtbo
+```
+
+Keep the QCA-SPI overlay on a different number: `uboot_overlay_addr6=/lib/firmware/BB-SPI0-QCASPI-00A0.dtbo`
+
+After this, and reboot, the `config-pin -q p9.19` is reporting an error `ERROR: open() for /sys/devices/platform/ocp/ocp:P9_19_pinmux/state failed, No such file or directory` but the can works.
+
+For manually setting baud rate:
+
+```
+sudo ip link set can0 type can bitrate 500000
+sudo ip link set can0 up
+ifconfig can0
+```
+
+For permanent setting the baudrate: Update the network interface for CAN, to start it automatically during startup. `sudo nano /etc/network/interfaces`
+
+Add the following at the end:
+
 ```
 allow-hotplug can0
 iface can0 can static
@@ -757,7 +771,16 @@ An example how to run CAN communication as a service is shown in Annex B (not ne
 
 The following settings in the pyPlc.ini files are recommended for use on FoccciCape:
 
-todo...
+`evsemode_environment = focccicape` Enable the blinking on the FoccciCapes relay outputs (just for demonstration) and enables the transmission of CAN frames on the CAN0 for showing status information.
+
+`evse_power_supply_control_via_special_homeplug_message = False` Do not send special homeplug message for controlling a power supply.
+
+`evse_printtrace = False` Do not print debug infos, because this spams the log and consumes run time.
+
+`evse_show_decoded_transmit_message = False` Do not re-decode the transmitted EXI messages, because this is wasted run time.
+
+`sniffer_print_raw_exi = False` Do not print sniffer data, because this is wasted run time and spams the log.
+
 
 ## tcpdump as a service
 
@@ -811,6 +834,11 @@ View logs
 Disable autostart
 `sudo systemctl disable starttcpdump.service`
 
+
+## Connecting a display to show status information
+
+For demonstration purposes we want to transparently show some data. We use a small TFT display which gets the data via CAN bus from the BeagleBone. For this purpose, the FoccciCape contains the needed CAN transceiver. FoccciCape supports two CAN busses: CAN0 and CAN1. We use CAN0 for the display.
+The display project is described at https://github.com/uhi22/TFT-with-CAN and there is a special branch containing the display software for the use with BeagleBone/FoccciCape: https://github.com/uhi22/TFT-with-CAN/tree/evsedisplaybranch
 
 
 ## Annex A: How it does NOT work. Or: Discarded approaches

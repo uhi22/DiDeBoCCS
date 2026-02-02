@@ -2,12 +2,15 @@
 
 Demonstrator for discharging a car via CCS connector
 
-## Version 1
+## Version 1: FoccciCape and BeagleBone
 
-Work in progress, based on the FoccciCape
+![image](doc/2026-01-31_FoccciCape_on_Ioniq_with_bulbs.jpg)
+
+- Demonstration video on Touran https://youtu.be/jTx41aqIouk
+- Demonstration video on Ioniq https://youtu.be/E4KNq4u5nmQ
 - Detailled setup-guide [setup_focccicape.md](setup_focccicape.md)
 
-## Version 0
+## Version 0: With Homeplug modem and Laptop
 
 The test setup consists of
 - notebook running pyPLC
