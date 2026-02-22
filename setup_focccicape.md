@@ -584,6 +584,9 @@ debian@BeagleBone:~/myprogs$ plctool -i eth1 -I
         MDU N/A
 ```
 
+If the QCA does not answer in this way, probably it is missing the software and/or parameters (PIB) in the SPI flash.
+The procedure how to download the software and parameters is described here: https://openinverter.org/forum/viewtopic.php?p=87710#p87710 Alternatively, the flash content could by read-out from a ready-prepared focccicape and flashed to an other one, using the SPI pins and a external programmer, similar as described here: https://github.com/uhi22/foccci#programming-the-spi-flash but with a different file.
+
 ## First demo charging
 
 - in pyPlc.ini, change to eth1
