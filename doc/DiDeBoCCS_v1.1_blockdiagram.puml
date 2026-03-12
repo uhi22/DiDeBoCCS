@@ -36,7 +36,7 @@ rectangle "HV Domain (max. 410V DC)" #FDECEA {
         SU_LV -right-> SU_HV : ///  galvanic\n     isolation  ///
     }
 
-    rectangle "MeasurementBoard\n[Sensor / ADC]" as MBrect #LightCyan {
+    rectangle "MeasurementBoard\n[muehlpower board]" as MBrect #LightCyan {
         component "LV Side\n[0 - 5V out]" as MB_LV #PaleTurquoise
         component "HV Side\n[0 - 410V DC in]" as MB_HV #OrangeRed
         MB_HV -right-> MB_LV : ///  galvanic\n     isolation  ///
