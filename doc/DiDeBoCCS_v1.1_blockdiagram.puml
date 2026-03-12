@@ -1,0 +1,67 @@
+@startuml BlockDiagram
+
+skinparam component {
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #444444
+    FontSize 10
+}
+
+skinparam linetype ortho
+
+skinparam rectangle {
+    FontSize 13
+    FontStyle bold
+    RoundCorner 15
+}
+
+' === LV DOMAIN ===
+rectangle "LV Domain (5V)" #FFF9E6 {
+    component "Powerbank\n[Li-Ion Battery Pack]" as PWR #LightYellow
+    component "PowerSwitch" as PS #LightGray
+    component "BeagleBoneWithFoccciCape\n[Central Controller]" as BB #LightBlue
+    component "Display\n[User Interface]" as DISP #Plum
+    component "CommunicationConnection\n[External Interface]" as CC #Wheat
+}
+
+' === HV DOMAIN ===
+rectangle "HV Domain (max. 410V DC)" #FDECEA {
+
+    rectangle "StepUp\n[Boost Converter 0 - 410V DC]" #LightGreen {
+        component "LV Side" as SU_LV #PaleGreen
+        component "HV Side\n[0 - 410V DC]" as SU_HV #OrangeRed
+        SU_LV -right-> SU_HV : ///  galvanic\n     isolation  ///
+    }
+
+    rectangle "MeasurementBoard\n[Sensor / ADC]" as MBrect #LightCyan {
+        component "LV Side\n[0 - 5V out]" as MB_LV #PaleTurquoise
+        component "HV Side\n[0 - 410V DC in]" as MB_HV #OrangeRed
+        MB_HV -right-> MB_LV : ///  galvanic\n     isolation  ///
+    }
+
+    component "HvConnections\n[High Voltage I/O\nmax. 410V DC]" as HV #LightCoral
+}
+
+' === POWER ===
+PWR -down-> PS          : 5V
+PS  -down-> BB          : 5V
+PS  -left-> DISP        : 5V
+PS  -right-> SU_LV      : 5V
+PS  -down-> MB_LV       : 5V
+
+' === DATA & CONTROL ===
+BB  -left-> DISP        : CAN bus
+BB  -right-> SU_LV      : 5x discrete signals\n[voltage control]
+MB_LV -up-> BB          : 1x analog signal\n[0 - 5V]
+
+' === HV BUS ===
+SU_HV -right-> HV       : DC+  /  DC-\n[0 - 410V DC]
+HV    -down-> MB_HV     : DC+  /  DC-\n[measured]
+
+' === COMMUNICATION ===
+CC  <-up-> BB           : CP  /  PE
+
+@enduml

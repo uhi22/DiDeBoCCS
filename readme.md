@@ -2,6 +2,18 @@
 
 Demonstrator for discharging a car via CCS connector
 
+## Version 1.1: BeagleBone with FoccciCape, HV supply and HV measurement
+
+![image](doc/DiDeBoCCS_v1.1_foto.jpg)
+![image](doc/DiDeBoCCS_v1.1_blockdiagram1.jpg)
+
+- DC fuses (10A, 1000VDC) are integrated in the CCS plug.
+- Adjustable HV supply, consisting of a bunch of small DCDC converters, which are controlled in groups by 5 FETs.
+- HV measurement using the muehlpower board
+- supplied by two 18650 cells and a circuit board from a power bank to get 5V
+- relay to connect/disconnect the bulbs
+
+
 ## Version 1: FoccciCape and BeagleBone
 
 ![image](doc/2026-01-31_FoccciCape_on_Ioniq_with_bulbs.jpg)
