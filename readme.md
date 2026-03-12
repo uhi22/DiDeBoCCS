@@ -5,7 +5,14 @@ Demonstrator for discharging a car via CCS connector
 ## Version 1.1: BeagleBone with FoccciCape, HV supply and HV measurement
 
 ![image](doc/DiDeBoCCS_v1.1_foto.jpg)
+
+### Overview Block Diagram
+
 ![image](doc/DiDeBoCCS_v1.1_blockdiagram1.jpg)
+
+### Detail Block Diagram of the HV StepUp converter
+
+![image](doc/DiDeBoCCS_v1.1_blockdiagram_StepUp.jpg)
 
 - DC fuses (10A, 1000VDC) are integrated in the CCS plug.
 - Adjustable HV supply, consisting of a bunch of small DCDC converters, which are controlled in groups by 5 FETs.

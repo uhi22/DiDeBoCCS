@@ -1,0 +1,84 @@
+@startuml StepUpDetail
+
+skinparam component {
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #444444
+    FontSize 10
+}
+
+skinparam linetype ortho
+
+skinparam rectangle {
+    FontSize 13
+    FontStyle bold
+    RoundCorner 15
+}
+
+left to right direction
+
+' === EXTERNAL LV INTERFACES (far left) ===
+component "BeagleBoneWithFoccciCape\n[Central Controller]" as BB #LightBlue
+component "PowerSwitch" as PS #LightGray
+
+' === EXTERNAL HV INTERFACE (far right) ===
+component "HvConnections\n[High Voltage I/O]" as HV #LightCoral
+
+rectangle "StepUp — Detail\n[Boost Converter 0 - 410V DC]" #LightGreen {
+
+    rectangle "LV Side\n[5V, FET-controlled ground switching]" #PaleGreen {
+        component "5V Rail" as RAIL #White
+        component "FET 1 + DCDC\n[225V]\nGND switched" as SU_225
+        component "FET 2 + DCDC\n[100V]\nGND switched" as SU_100
+        component "FET 3 + DCDC\n[ 50V]\nGND switched" as SU_50
+        component "FET 4 + DCDC\n[ 25V]\nGND switched" as SU_25
+        component "FET 5 + DCDC\n[ 12V]\nGND switched" as SU_12
+
+        ' Single 5V rail feeds all groups
+        RAIL -down-> SU_225 : 5V
+        RAIL -down-> SU_100 : 5V
+        RAIL -down-> SU_50  : 5V
+        RAIL -down-> SU_25  : 5V
+        RAIL -down-> SU_12  : 5V
+    }
+
+    rectangle "HV Side\n[series connected, sum voltage 0 - 410V DC]" #OrangeRed {
+        component "HV Out 1\n[225V]" as HV_225
+        component "HV Out 2\n[+100V]" as HV_100
+        component "HV Out 3\n[+ 50V]" as HV_50
+        component "HV Out 4\n[+ 25V]" as HV_25
+        component "HV Out 5\n[+ 12V]" as HV_12
+
+        ' HV series chain
+        HV_225 -down-> HV_100 : series
+        HV_100 -down-> HV_50  : series
+        HV_50  -down-> HV_25  : series
+        HV_25  -down-> HV_12  : series
+    }
+
+    ' LV -> HV isolation barriers
+    SU_225 -right-> HV_225 : /// isolated ///
+    SU_100 -right-> HV_100 : /// isolated ///
+    SU_50  -right-> HV_50  : /// isolated ///
+    SU_25  -right-> HV_25  : /// isolated ///
+    SU_12  -right-> HV_12  : /// isolated ///
+}
+
+' === SINGLE 5V LINE from PowerSwitch ===
+PS -right-> RAIL            : 5V
+
+' === DISCRETE SIGNALS from BeagleBone ===
+BB -right-> SU_225          : discrete signal 1\n[FET gate]
+BB -right-> SU_100          : discrete signal 2\n[FET gate]
+BB -right-> SU_50           : discrete signal 3\n[FET gate]
+BB -right-> SU_25           : discrete signal 4\n[FET gate]
+BB -right-> SU_12           : discrete signal 5\n[FET gate]
+
+' === HV OUTPUT to HvConnections ===
+HV_225 -right-> HV          : DC+ [sum: 0 - 410V DC]
+HV_12  -right-> HV          : DC- [negative DC]
+
+@enduml

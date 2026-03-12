@@ -22,3 +22,6 @@ The MeasurementBoard measures the voltage on the DC lines.
 
 Both the MeasurementBoard and the StepUp are galvanically isolated. The isolation is inside the MeasurementBoard and StepUp.
 
+The StepUp consists of 5 groups of isolated DCDC converters. For each of the following voltages: 225V, 100V, 50V, 25V, 12V.
+
+The groups are connected in series on HV side, to get the sum voltage. On LV side, each group is controlled from the related discrete line via a FET, that switches the ground connection of the group.
