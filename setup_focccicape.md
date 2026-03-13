@@ -352,6 +352,8 @@ Next option: try cross-compiling on an other machine.
 
 ### Cross compiling on windows 10 machine using WSL2
 
+(Hint: Cross-compiling is a little bit tricky. Look also in https://github.com/uhi22/DiDeBoCCS/issues/1, which uses slightly different commands.)
+
 - powershell as admin. `wsl --install` This installs Ubuntu as "Windows Subsystem For Linux".
 - restart the PC.
 - startmenu -> Ubuntu
