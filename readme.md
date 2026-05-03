@@ -6,6 +6,8 @@ Demonstrator for discharging a car via CCS connector
 
 ![image](doc/DiDeBoCCS_v1.1_foto.jpg)
 
+Demonstration video on Ioniq https://www.youtube.com/watch?v=rrMPLx6AtoU
+
 ### Overview Block Diagram
 
 ![image](doc/DiDeBoCCS_v1.1_blockdiagram1.jpg)
