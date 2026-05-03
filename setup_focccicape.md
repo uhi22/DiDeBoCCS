@@ -856,6 +856,108 @@ For demonstration purposes we want to transparently show some data. We use a sma
 The display project is described at https://github.com/uhi22/TFT-with-CAN and there is a special branch containing the display software for the use with BeagleBone/FoccciCape: https://github.com/uhi22/TFT-with-CAN/tree/evsedisplaybranch
 
 
+## Button with LED
+
+The FoccciCape supports to read a button and drive an LED on the same pin.
+The LED state is controlled via P9_28. The button can only be read-back if the
+P9_28 is turned to high. Then, the button state can be read at P9_30.
+
+However, controlling the P9_28 does not work if the SPI1 is enabled, because in this case the P9_28 has the special function SPI1_CS0.
+Check this:
+```
+debian@BeagleBone:~/myprogs/DiDeBoCCS$ ls /dev/spidev*
+/dev/spidev0.1  /dev/spidev1.0  /dev/spidev1.1
+```
+If the spidev1 appears here, we need to disable it. But how?
+* Try1: If there would be an overlay for the SPI1 in the uEnv.txt, we should disable it. But there is none.
+* Try2: Add a line `disable_uboot_overlay_spi1=1` in uEnv.txt. -> does not help.
+* Try3: comment-out the enable_uboot_cape_universal=1 -> disables the CAN -> no solution.
+* Try4: Add a line `disable_uboot_overlay_spi1=1` AFTER enable_uboot_cape_universal=1 -> does not help
+* Try5:
+    * Assumption: SPI1 is baked into the base device tree (the .dtb file itself), and disable_uboot_overlay_spi1 only prevents the overlay from loading — it cannot disable a node that's already okay in the base DTB.
+    * Solution: We need a small overlay that explicitly sets SPI1's status to "disabled":
+        - nano /tmp/disable-spi1.dts
+```
+/dts-v1/;
+/plugin/;
+
+&spi1 {
+    status = "disabled";
+};
+```
+        - sudo dtc -O dtb -o /lib/firmware/DISABLE-SPI1-00A0.dtbo -b 0 -@ /tmp/disable-spi1.dts
+        - sudo nano /boot/uEnv.txt
+        - add:
+        - uboot_overlay_addr7=/lib/firmware/DISABLE-SPI1-00A0.dtbo
+        - sudo reboot now
+        - After reboot, check whether the SPI1 is gone, only the SPI0.1 shall remain:
+```
+debian@BeagleBone:~/myprogs/DiDeBoCCS$ ls /dev/spidev*
+/dev/spidev0.1
+```
+
+* Try6: With the solution of try5, the P9_28 is not assigned to anything. Not SPI1 and not GPIO. To use it as GPIO, we need to extend our overlay:
+        - nano /tmp/disable-spi1.dts
+
+```
+/dts-v1/;
+/plugin/;
+
+&am33xx_pinmux {
+    p9_28_gpio_pins: p9_28_gpio_pins {
+        pinctrl-single,pins = <0x19c 0x0f>;
+    };
+};
+
+&spi1 {
+    status = "disabled";
+};
+
+&ocp {
+    p9_28_pinmux: p9_28_pinmux {
+        compatible = "bone-pinmux-helper";
+        pinctrl-names = "default";
+        pinctrl-0 = <&p9_28_gpio_pins>;
+        status = "okay";
+    };
+};
+```
+        - sudo dtc -O dtb -o /lib/firmware/DISABLE-SPI1-00A0.dtbo -b 0 -@ /tmp/disable-spi1.dts
+        - sudo reboot now
+        - check the pinmux register:
+```
+sudo python3 - <<'EOF'
+import mmap, struct
+with open("/dev/mem", "rb") as f:
+    mem = mmap.mmap(f.fileno(), 0x1000, offset=0x44e10000, access=mmap.ACCESS_READ)
+    mem.seek(0x99c)
+    val = struct.unpack("<I", mem.read(4))[0]
+    mode = val & 0x7
+    print(f"0x44e1099c = 0x{val:08x}")
+    print(f"  MUX mode : {mode} {'✓ GPIO' if mode == 7 else '✗ NOT GPIO'}")
+    print(f"  Pull dis : {(val >> 3) & 1}")
+    print(f"  Pull up  : {(val >> 4) & 1}")
+    print(f"  Rx active: {(val >> 5) & 1}")
+EOF
+0x44e1099c = 0x0000000f
+  MUX mode : 7 ✓ GPIO
+  Pull dis : 1
+  Pull up  : 0
+  Rx active: 0
+```
+
+- test the GPIO:
+```
+sudo echo 113 | sudo tee /sys/class/gpio/export
+echo out | sudo tee /sys/class/gpio/gpio113/direction
+echo 1   | sudo tee /sys/class/gpio/gpio113/value
+echo 0   | sudo tee /sys/class/gpio/gpio113/value
+```
+This switches the LED on and off.
+
+Todo: Does the python GPIO work without the "export" before?
+
+        
 ## Annex A: How it does NOT work. Or: Discarded approaches
 
 ### Connection Variant A - standalone with boot from SD (not recommended)
